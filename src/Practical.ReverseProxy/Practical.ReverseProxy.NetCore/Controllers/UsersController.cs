@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Practical.ReverseProxy.ReverseProxy.NetCore;
 using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -24,6 +25,7 @@ namespace Practical.ReverseProxy.NetCore.Controllers
                 !HttpMethods.IsDelete(requestMethod) &&
                 !HttpMethods.IsTrace(requestMethod))
             {
+                request.Body.Seek(0, SeekOrigin.Begin);
                 var streamContent = new StreamContent(request.Body);
                 requestMessage.Content = streamContent;
             }
@@ -61,7 +63,6 @@ namespace Practical.ReverseProxy.NetCore.Controllers
         public async Task<IActionResult> Post(object model)
         {
             var request = CloneRequest(new Uri("https://localhost:44352/api/users"));
-            request.Content = model.AsJsonContent();
             var response = await _httpClient.SendAsync(request);
             return ForwardResponse(response);
         }
@@ -70,7 +71,6 @@ namespace Practical.ReverseProxy.NetCore.Controllers
         public async Task<IActionResult> Put(string id, object model)
         {
             var request = CloneRequest(new Uri($"https://localhost:44352/api/users/{id}"));
-            request.Content = model.AsJsonContent();
             var response = await _httpClient.SendAsync(request);
             return ForwardResponse(response);
         }
