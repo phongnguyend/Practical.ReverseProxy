@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CryptographyHelper.HashAlgorithms;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Practical.ReverseProxy.Api.Entities;
 using Practical.ReverseProxy.Api.Models;
 using System;
 using System.Collections.Generic;
@@ -19,7 +21,7 @@ namespace Practical.ReverseProxy.Api.Controllers
     public class UsersController : ControllerBase
     {
         private static readonly object _lock = new object();
-        private static readonly Dictionary<string, (string Token, DateTimeOffset Expiration)> _refreshTokens = new Dictionary<string, (string Token, DateTimeOffset Expiration)>();
+        private static readonly Dictionary<string, RefreshToken> _refreshTokens = new Dictionary<string, RefreshToken>();
         private readonly IConfiguration _configuration;
 
         public UsersController(IConfiguration configuration)
@@ -80,11 +82,18 @@ namespace Practical.ReverseProxy.Api.Controllers
             };
 
             var token = CreateToken(authClaims);
-            var refreshToken = GenerateRefreshToken();
+            var refreshTokenPart1 = GenerateRefreshToken();
+            var refreshTokenPart2 = GenerateRefreshToken();
+            var refreshToken = $"{refreshTokenPart1}.{refreshTokenPart2}";
 
             lock (_lock)
             {
-                _refreshTokens[model.UserName] = (refreshToken, DateTimeOffset.UtcNow.AddHours(24));
+                _refreshTokens.Add(refreshTokenPart1, new RefreshToken
+                {
+                    UserName = model.UserName,
+                    Expiration = DateTimeOffset.UtcNow.AddHours(24),
+                    TokenHash = refreshToken.UseSha256().ComputeHashedString()
+                });
             }
 
             return Ok(new
@@ -101,40 +110,62 @@ namespace Practical.ReverseProxy.Api.Controllers
         [Route("refreshtoken")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenModel model)
         {
-            if (model != null)
+            string refreshTokenPart1 = model.RefreshToken.Split('.')[0];
+
+            if (!_refreshTokens.ContainsKey(refreshTokenPart1))
             {
-                model.UserName = model?.UserName?.ToLowerInvariant();
+                return BadRequest();
             }
+            else if (_refreshTokens[refreshTokenPart1].ConsumedTime != null)
+            {
+                // TODO: logout and inform user
+                return BadRequest();
+            }
+            else if (_refreshTokens[refreshTokenPart1].Expiration < DateTimeOffset.Now)
+            {
+                lock (_lock)
+                {
+                    _refreshTokens.Remove(refreshTokenPart1);
+                }
 
-            var validRefreshToken = _refreshTokens.ContainsKey(model.UserName)
-                && _refreshTokens[model.UserName].Token == model.RefreshToken
-                && _refreshTokens[model.UserName].Expiration > DateTimeOffset.Now;
-
-            if (!validRefreshToken)
+                return BadRequest();
+            }
+            else if (_refreshTokens[refreshTokenPart1].TokenHash != model.RefreshToken.UseSha256().ComputeHashedString())
             {
                 return BadRequest();
             }
 
+            var userName = _refreshTokens[refreshTokenPart1].UserName;
+
             var authClaims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, model.UserName),
+                new Claim(ClaimTypes.Name, userName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToString()),
             };
 
             var token = CreateToken(authClaims);
-            var refreshToken = GenerateRefreshToken();
+            var newRefreshTokenPart1 = GenerateRefreshToken();
+            var newRefreshTokenPart2 = GenerateRefreshToken();
+            var newRefreshToken = $"{newRefreshTokenPart1}.{newRefreshTokenPart2}";
 
             lock (_lock)
             {
-                _refreshTokens[model.UserName] = (refreshToken, DateTimeOffset.UtcNow.AddHours(24));
+                _refreshTokens[refreshTokenPart1].ConsumedTime = DateTimeOffset.UtcNow;
+
+                _refreshTokens.Add(newRefreshTokenPart1, new RefreshToken
+                {
+                    UserName = userName,
+                    Expiration = DateTimeOffset.UtcNow.AddHours(24),
+                    TokenHash = newRefreshToken.UseSha256().ComputeHashedString()
+                });
             }
 
             return Ok(new
             {
-                UserName = model.UserName,
+                UserName = userName,
                 AccessToken = new JwtSecurityTokenHandler().WriteToken(token),
-                RefreshToken = refreshToken,
+                RefreshToken = newRefreshToken,
                 Expiration = token.ValidTo
             });
         }
@@ -158,7 +189,7 @@ namespace Practical.ReverseProxy.Api.Controllers
             var randomNumber = new byte[64];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
+            return randomNumber.UseSha256().ComputeHashedString();
         }
 
         private void ValidateToken(string token)

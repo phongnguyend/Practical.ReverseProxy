@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Practical.ReverseProxy.Client.Models;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 

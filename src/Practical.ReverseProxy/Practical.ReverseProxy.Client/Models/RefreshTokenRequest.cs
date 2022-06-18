@@ -1,4 +1,4 @@
-﻿namespace Practical.ReverseProxy.Client
+﻿namespace Practical.ReverseProxy.Client.Models
 {
     public class RefreshTokenRequest
     {

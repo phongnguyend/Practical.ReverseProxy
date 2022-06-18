@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 
-namespace Practical.ReverseProxy.Client
+namespace Practical.ReverseProxy.Client.Extensions
 {
     public static class HttpClientExtensions
     {

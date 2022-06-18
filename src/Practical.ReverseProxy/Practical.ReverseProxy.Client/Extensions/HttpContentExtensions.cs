@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace Practical.ReverseProxy.Client
+namespace Practical.ReverseProxy.Client.Extensions
 {
     public static class HttpContentExtensions
     {
