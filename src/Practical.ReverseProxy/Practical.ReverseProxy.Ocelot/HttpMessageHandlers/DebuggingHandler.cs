@@ -6,8 +6,11 @@ namespace Practical.ReverseProxy.Ocelot.HttpMessageHandlers
 {
     public class DebuggingHandler : DelegatingHandler
     {
-        public DebuggingHandler()
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+        public DebuggingHandler(IHttpContextAccessor httpContextAccessor)
         {
+            _httpContextAccessor = httpContextAccessor;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
