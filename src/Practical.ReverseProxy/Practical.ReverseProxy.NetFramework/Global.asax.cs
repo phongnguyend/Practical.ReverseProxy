@@ -5,7 +5,7 @@ using System.Web;
 using System.Web.Http;
 using System.Web.Routing;
 
-namespace Practical.ReverseProxy.ReverseProxy.NetFramework
+namespace Practical.ReverseProxy.NetFramework
 {
     public class WebApiApplication : System.Web.HttpApplication
     {

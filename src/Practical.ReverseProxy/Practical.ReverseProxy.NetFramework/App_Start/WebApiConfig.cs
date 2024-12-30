@@ -4,7 +4,7 @@ using System.Linq;
 using System.Web.Http;
 using System.Web.Http.Cors;
 
-namespace Practical.ReverseProxy.ReverseProxy.NetFramework
+namespace Practical.ReverseProxy.NetFramework
 {
     public static class WebApiConfig
     {
