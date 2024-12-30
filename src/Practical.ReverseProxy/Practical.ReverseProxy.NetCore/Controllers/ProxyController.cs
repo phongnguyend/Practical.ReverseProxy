@@ -46,11 +46,12 @@ public class ProxyController : Controller
         return requestMessage;
     }
 
-    private async Task ForwardResponse(HttpResponseMessage httpResponseMessage)
+    private async Task ForwardResponseAsync(HttpResponseMessage httpResponseMessage)
     {
         var response = HttpContext.Response;
 
         response.StatusCode = (int)httpResponseMessage.StatusCode;
+
         foreach (var header in httpResponseMessage.Headers)
         {
             response.Headers[header.Key] = header.Value.ToArray();
@@ -64,16 +65,14 @@ public class ProxyController : Controller
         // SendAsync removes chunking from the response. This removes the header so it doesn't expect a chunked response.
         response.Headers.Remove("transfer-encoding");
 
-        using (var responseStream = await httpResponseMessage.Content.ReadAsStreamAsync())
-        {
-            await responseStream.CopyToAsync(response.Body, StreamCopyBufferSize, HttpContext.RequestAborted);
-        }
+        using var responseStream = await httpResponseMessage.Content.ReadAsStreamAsync();
+        await responseStream.CopyToAsync(response.Body, StreamCopyBufferSize, HttpContext.RequestAborted);
     }
 
-    protected async Task Send(string url)
+    protected async Task SendAsync(string url)
     {
         var request = CloneRequest(new Uri(url));
-        var response = await _httpClient.SendAsync(request);
-        await ForwardResponse(response);
+        var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        await ForwardResponseAsync(response);
     }
 }
