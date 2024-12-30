@@ -1,7 +1,6 @@
-﻿namespace Practical.ReverseProxy.Client.Models
+﻿namespace Practical.ReverseProxy.Client.Models;
+
+public class UserModel
 {
-    public class UserModel
-    {
-        public string Id { get; set; }
-    }
+    public string Id { get; set; }
 }

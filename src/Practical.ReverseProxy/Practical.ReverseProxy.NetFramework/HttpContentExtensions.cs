@@ -10,7 +10,6 @@ namespace Practical.ReverseProxy.ReverseProxy.NetFramework
 {
     public static class HttpContentExtensions
     {
-
         public static StringContent AsStringContent(this object obj, string contentType)
         {
             var text = string.Empty;

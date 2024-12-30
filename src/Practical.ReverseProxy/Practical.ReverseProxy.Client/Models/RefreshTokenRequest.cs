@@ -1,9 +1,8 @@
-﻿namespace Practical.ReverseProxy.Client.Models
-{
-    public class RefreshTokenRequest
-    {
-        public string UserName { get; set; }
+﻿namespace Practical.ReverseProxy.Client.Models;
 
-        public string RefreshToken { get; set; }
-    }
+public class RefreshTokenRequest
+{
+    public string UserName { get; set; }
+
+    public string RefreshToken { get; set; }
 }

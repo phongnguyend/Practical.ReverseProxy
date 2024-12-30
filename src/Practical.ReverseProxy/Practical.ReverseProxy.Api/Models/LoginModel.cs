@@ -1,7 +1,6 @@
-﻿namespace Practical.ReverseProxy.Api.Models
+﻿namespace Practical.ReverseProxy.Api.Models;
+
+public class LoginModel
 {
-    public class LoginModel
-    {
-        public string UserName { get; set; }
-    }
+    public string UserName { get; set; }
 }

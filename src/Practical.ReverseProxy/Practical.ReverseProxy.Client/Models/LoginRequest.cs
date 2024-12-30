@@ -1,7 +1,6 @@
-﻿namespace Practical.ReverseProxy.Client.Models
+﻿namespace Practical.ReverseProxy.Client.Models;
+
+public class LoginRequest
 {
-    public class LoginRequest
-    {
-        public string UserName { get; set; }
-    }
+    public string UserName { get; set; }
 }

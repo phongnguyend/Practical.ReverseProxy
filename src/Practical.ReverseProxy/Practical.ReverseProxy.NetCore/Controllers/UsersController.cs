@@ -1,86 +1,45 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Practical.ReverseProxy.ReverseProxy.NetCore;
-using System;
-using System.IO;
-using System.Net.Http;
+﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 
-namespace Practical.ReverseProxy.NetCore.Controllers
+namespace Practical.ReverseProxy.NetCore.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+public class UsersController : ProxyController
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UsersController : ControllerBase
+    [HttpPost("login")]
+    public async Task Login()
     {
-        private static HttpClient _httpClient = new HttpClient();
+        await Send("https://localhost:44352/api/users/login");
+    }
 
-        private HttpRequestMessage CloneRequest(Uri uri)
-        {
-            var request = HttpContext.Request;
+    [HttpPost("refreshToken")]
+    public async Task RefreshToken()
+    {
+        await Send("https://localhost:44352/api/users/refreshToken");
+    }
 
-            var requestMessage = new HttpRequestMessage();
-            var requestMethod = request.Method;
-            if (!HttpMethods.IsGet(requestMethod) &&
-                !HttpMethods.IsHead(requestMethod) &&
-                !HttpMethods.IsDelete(requestMethod) &&
-                !HttpMethods.IsTrace(requestMethod))
-            {
-                request.Body.Seek(0, SeekOrigin.Begin);
-                var streamContent = new StreamContent(request.Body);
-                requestMessage.Content = streamContent;
-            }
+    [HttpGet]
+    public async Task Get()
+    {
+        await Send("https://localhost:44352/api/users");
+    }
 
-            // Copy the request headers
-            foreach (var header in request.Headers)
-            {
-                if (!requestMessage.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()) && requestMessage.Content != null)
-                {
-                    requestMessage.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
-                }
-            }
+    [HttpPost]
+    public async Task Post(object model)
+    {
+        await Send("https://localhost:44352/api/users");
+    }
 
-            requestMessage.Headers.Host = uri.Authority;
-            requestMessage.RequestUri = uri;
-            requestMessage.Method = new HttpMethod(request.Method);
+    [HttpPut("{id}")]
+    public async Task Put(string id, object model)
+    {
+        await Send($"https://localhost:44352/api/users/{id}");
+    }
 
-            return requestMessage;
-        }
-
-        private HttpResponseMessageActionResult ForwardResponse(HttpResponseMessage httpResponseMessage)
-        {
-            return new HttpResponseMessageActionResult(httpResponseMessage);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Get()
-        {
-            var request = CloneRequest(new Uri("https://localhost:44352/api/users"));
-            var response = await _httpClient.SendAsync(request);
-            return ForwardResponse(response);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Post(object model)
-        {
-            var request = CloneRequest(new Uri("https://localhost:44352/api/users"));
-            var response = await _httpClient.SendAsync(request);
-            return ForwardResponse(response);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(string id, object model)
-        {
-            var request = CloneRequest(new Uri($"https://localhost:44352/api/users/{id}"));
-            var response = await _httpClient.SendAsync(request);
-            return ForwardResponse(response);
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
-        {
-            var request = CloneRequest(new Uri($"https://localhost:44352/api/users/{id}"));
-            var response = await _httpClient.SendAsync(request);
-            return ForwardResponse(response);
-        }
+    [HttpDelete("{id}")]
+    public async Task Delete(string id)
+    {
+        await Send($"https://localhost:44352/api/users/{id}");
     }
 }
