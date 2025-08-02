@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using UriHelper;
 
 namespace Practical.ReverseProxy.Client;
 
@@ -15,32 +16,33 @@ internal class Program
 
     static async Task Main(string[] args)
     {
-
         int PORT = PROXY_NET_CORE_PORT;
+
+        var baseUrl = $"https://localhost:{PORT}";
 
         var httpService = new HttpService(new HttpClient());
 
-        var tokenResponse = await httpService.GetToken($"https://localhost:{PORT}/api/users/login", new LoginRequest
+        var tokenResponse = await httpService.GetToken(UriPath.Combine(baseUrl, $"/api/users/login"), new LoginRequest
         {
             UserName = "test@abc.com"
         });
 
-        var users = await httpService.GetAsync<List<UserModel>>(url: $"https://localhost:{PORT}/api/users", accessToken: tokenResponse["accessToken"]);
+        var users = await httpService.GetAsync<List<UserModel>>(url: UriPath.Combine(baseUrl, $"/api/users"), accessToken: tokenResponse["accessToken"]);
 
-        tokenResponse = await httpService.RefreshToken($"https://localhost:{PORT}/api/users/refreshToken", new RefreshTokenRequest
+        tokenResponse = await httpService.RefreshToken(UriPath.Combine(baseUrl, $"/api/users/refreshToken"), new RefreshTokenRequest
         {
             UserName = "test@abc.com",
             RefreshToken = tokenResponse["refreshToken"]
         });
 
-        var user = await httpService.PostAsync<UserModel>(url: $"https://localhost:{PORT}/api/users",
+        var user = await httpService.PostAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users"),
             data: new UserModel { Id = "3" },
             accessToken: tokenResponse["accessToken"]);
 
-        user = await httpService.PutAsync<UserModel>(url: $"https://localhost:{PORT}/api/users/{user.Id}",
+        user = await httpService.PutAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"),
             data: new UserModel { },
             accessToken: tokenResponse["accessToken"]);
 
-        await httpService.DeleteAsync(url: $"https://localhost:{PORT}/api/users/{user.Id}", accessToken: tokenResponse["accessToken"]);
+        await httpService.DeleteAsync(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"), accessToken: tokenResponse["accessToken"]);
     }
 }

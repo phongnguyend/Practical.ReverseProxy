@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using UriHelper;
 
 namespace Practical.ReverseProxy.NetCore.Controllers;
 
@@ -13,6 +14,6 @@ public class CatchAllController : ProxyController
     [HttpDelete("{**catchAll}")]
     public async Task CatchAll(string catchAll)
     {
-        await SendAsync($"https://localhost:44352/{catchAll}{Request.QueryString}");
+        await SendAsync(UriPath.Combine("https://localhost:44352", $"{catchAll}{Request.QueryString}"));
     }
 }
