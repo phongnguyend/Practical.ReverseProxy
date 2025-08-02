@@ -1,16 +1,23 @@
-namespace Practical.ReverseProxy.Ocelot;
+using Ocelot.DependencyInjection;
+using Ocelot.Middleware;
+using Practical.ReverseProxy.Ocelot.HttpMessageHandlers;
 
-public class Program
-{
-    public static void Main(string[] args)
-    {
-        CreateHostBuilder(args).Build().Run();
-    }
+var builder = WebApplication.CreateBuilder(args);
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            });
-}
+// Add services to the container.
+builder.Services.AddControllers();
+builder.Services.AddOcelot()
+    .AddDelegatingHandler<DebuggingHandler>(true);
+
+var app = builder.Build();
+
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.UseOcelot().Wait();
+
+app.Run();
