@@ -1,48 +1,40 @@
-﻿using Practical.ReverseProxy.Client.Models;
+﻿using Practical.ReverseProxy.Client;
+using Practical.ReverseProxy.Client.Models;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Threading.Tasks;
 using UriHelper;
 
-namespace Practical.ReverseProxy.Client;
+const int API_PORT = 44352;
+const int PROXY_NET_FRAMEWORK_PORT = 44346;
+const int PROXY_NET_CORE_PORT = 44375;
+const int OCELOT_PORT = 44347;
+const int YARP_PORT = 44348;
 
-internal class Program
+int PORT = PROXY_NET_CORE_PORT;
+
+var baseUrl = $"https://localhost:{PORT}";
+
+var httpService = new HttpService(new HttpClient());
+
+var tokenResponse = await httpService.GetToken(UriPath.Combine(baseUrl, $"/api/users/login"), new LoginRequest
 {
-    private const int API_PORT = 44352;
-    private const int PROXY_NET_FRAMEWORK_PORT = 44346;
-    private const int PROXY_NET_CORE_PORT = 44375;
-    private const int OCELOT_PORT = 44347;
-    private const int YARP_PORT = 44348;
+    UserName = "test@abc.com"
+});
 
-    static async Task Main(string[] args)
-    {
-        int PORT = PROXY_NET_CORE_PORT;
+var users = await httpService.GetAsync<List<UserModel>>(url: UriPath.Combine(baseUrl, $"/api/users"), accessToken: tokenResponse["accessToken"]);
 
-        var baseUrl = $"https://localhost:{PORT}";
+tokenResponse = await httpService.RefreshToken(UriPath.Combine(baseUrl, $"/api/users/refreshToken"), new RefreshTokenRequest
+{
+    UserName = "test@abc.com",
+    RefreshToken = tokenResponse["refreshToken"]
+});
 
-        var httpService = new HttpService(new HttpClient());
+var user = await httpService.PostAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users"),
+    data: new UserModel { Id = "3" },
+    accessToken: tokenResponse["accessToken"]);
 
-        var tokenResponse = await httpService.GetToken(UriPath.Combine(baseUrl, $"/api/users/login"), new LoginRequest
-        {
-            UserName = "test@abc.com"
-        });
+user = await httpService.PutAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"),
+    data: new UserModel { },
+    accessToken: tokenResponse["accessToken"]);
 
-        var users = await httpService.GetAsync<List<UserModel>>(url: UriPath.Combine(baseUrl, $"/api/users"), accessToken: tokenResponse["accessToken"]);
-
-        tokenResponse = await httpService.RefreshToken(UriPath.Combine(baseUrl, $"/api/users/refreshToken"), new RefreshTokenRequest
-        {
-            UserName = "test@abc.com",
-            RefreshToken = tokenResponse["refreshToken"]
-        });
-
-        var user = await httpService.PostAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users"),
-            data: new UserModel { Id = "3" },
-            accessToken: tokenResponse["accessToken"]);
-
-        user = await httpService.PutAsync<UserModel>(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"),
-            data: new UserModel { },
-            accessToken: tokenResponse["accessToken"]);
-
-        await httpService.DeleteAsync(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"), accessToken: tokenResponse["accessToken"]);
-    }
-}
+await httpService.DeleteAsync(url: UriPath.Combine(baseUrl, $"/api/users/{user.Id}"), accessToken: tokenResponse["accessToken"]);
